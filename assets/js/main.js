@@ -992,18 +992,57 @@ function initMobileNav() {
   const menu = document.getElementById('navbarMenu');
   if (!toggler || !menu) return;
 
+  // Create overlay for closing menu by tapping outside
+  let overlay = document.getElementById('navOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'navOverlay';
+    overlay.style.cssText = `
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 998;
+      transition: opacity 0.3s ease;
+    `;
+    document.body.appendChild(overlay);
+  }
+
+  function openMenu() {
+    toggler.classList.add('active');
+    menu.classList.add('active');
+    overlay.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeMenu() {
+    toggler.classList.remove('active');
+    menu.classList.remove('active');
+    overlay.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
   toggler.addEventListener('click', () => {
-    toggler.classList.toggle('active');
-    menu.classList.toggle('active');
-    document.body.style.overflow = menu.classList.contains('active') ? 'hidden' : '';
+    if (menu.classList.contains('active')) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
   });
 
+  // Close when tapping the overlay
+  overlay.addEventListener('click', closeMenu);
+
+  // Close when clicking a nav link
   menu.querySelectorAll('.nav-link').forEach(link => {
-    link.addEventListener('click', () => {
-      toggler.classList.remove('active');
-      menu.classList.remove('active');
-      document.body.style.overflow = '';
-    });
+    link.addEventListener('click', closeMenu);
+  });
+
+  // Close on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && menu.classList.contains('active')) {
+      closeMenu();
+    }
   });
 }
 
@@ -1735,8 +1774,8 @@ function initChatbot() {
       if (!config.GROQ_API_KEY) throw new Error('No API key');
 
       const systemPrompt = currentLang === 'ar'
-        ? 'أنت المساعد الافتراضي الرسمي لاتحاد طلاب جامعة الإسكندرية الأهلية. اتكلم مع الطلبة باللهجة المصرية البسيطة، بأسلوب رايق وصريح. مهمتك تشرح لهم بسرعة هم يقدروا يعملوا إيه من خلال الموقع. خليك دايمًا مختصر: من ٢ لـ ٣ جُمل في أغلب الردود.'
-        : 'You are the official virtual assistant for the Alexandria National University Student Union. Keep answers short (2-3 sentences) and very clear. Speak in a friendly, conversational tone and help students navigate the site. Reply in the same language as the user.';
+        ? 'أنت المساعد الافتراضي الرسمي لاتحاد طلاب جامعة الإسكندرية الأهلية. اتكلم مع الطلبة باللهجة المصرية البسيطة، بأسلوب رايق ومباشر. جاوب بإيجاز شديد: جملتين أو تلاتة بالكتير. ممنوع تماماً استخدام علامات النجمة (**) أو التنسيق المعقد، خلي كلامك نص عادي ومفهوم جداً.'
+        : 'You are the official virtual assistant for the Alexandria National University Student Union. Keep answers extremely short (2-3 sentences max) and very clear. Speak in a friendly, conversational tone. IMPORTANT: Do NOT use asterisks (**) or markdown formatting. Use plain text only. Reply in the user\'s language.';
 
       const messages = [
         { role: 'system', content: systemPrompt },
@@ -1816,17 +1855,15 @@ function initNewsTicker() {
   const container = document.getElementById('tickerContent');
   if (!container) return;
   const news = currentLang === 'ar' ? [
-    '🎉 تسجيل مفتوح لدورة خماسيات كرة القدم الرمضانية — سجّل الآن!',
-    '📢 حفل الإفطار الرمضاني الجمعة القادمة — لا تفوّته!',
-    '🏅 تهانينا لشهد حسام على ميداليتا الفضة في السباحة بالزعانف!',
-    '💳 بوابة الدفع الإلكتروني متاحة الآن — ادفع رسوم الأنشطة أونلاين',
-    '📲 حمّل الموقع كتطبيق على موبايلك — اضغط "إضافة للشاشة الرئيسية"'
+    'تسجيل مفتوح لدورة خماسيات كرة القدم الرمضانية — سجّل الآن!',
+    'حفل الإفطار الرمضاني الجمعة القادمة — لا تفوّته!',
+    'تهانينا لشهد حسام على ميداليتا الفضة في السباحة بالزعانف!',
+    'بوابة الدفع الإلكتروني متاحة الآن — ادفع رسوم الأنشطة أونلاين'
   ] : [
-    '🎉 Registration open for Ramadan Football Tournament — Register now!',
-    '📢 Ramadan Iftar Event this Friday — Don\'t miss it!',
-    '🏅 Congratulations to Shahd Hossam for her Silver Medals!',
-    '💳 Online Payment Portal is now live — Pay activity fees online',
-    '📲 Install this site as an app — tap "Add to Home Screen"'
+    'Registration open for Ramadan Football Tournament — Register now!',
+    'Ramadan Iftar Event this Friday — Don\'t miss it!',
+    'Congratulations to Shahd Hossam for her Silver Medals!',
+    'Online Payment Portal is now live — Pay activity fees online'
   ];
   const doubled = [...news, ...news];
   container.innerHTML = doubled.map(n => `<span class="ticker-item">${n}</span>`).join('');
